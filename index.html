@@ -278,9 +278,16 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style id="baum-service-nord-header-style">
+.app-header{background:#fff;border-bottom:1px solid var(--line);padding:8px 14px;position:sticky;top:0;z-index:100;display:flex;align-items:center;min-height:58px}
+.app-header a{display:block;line-height:0}
+.app-logo{display:block;width:190px;height:auto;max-height:62px;object-fit:contain;object-position:left center}
+@media(max-width:600px){.app-header{padding:6px 10px;min-height:50px}.app-logo{width:165px;max-height:54px}}
+</style>
 </head>
 <body>
-<header><h1>Baustellen-App <span class="pill" id="statusPill">Entwurf</span></h1></header>
+<header class="app-header"><a href="#" aria-label="Baum Service Nord"><img class="app-logo" src="https://baum-service-nord.de/wp-content/uploads/2021/09/baumservicenord_logoweb.png" alt="Baum Service Nord – Die Baumexperten"></a></header>
 <main>
 <section id="login" class="card">
 <h2>Anmeldung</h2>
@@ -429,11 +436,16 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 
 <div class="card">
 <h2>Kundenabnahme</h2>
+<div class="actions" style="align-items:center;gap:16px;flex-wrap:wrap;">
 <label class="check"><input id="customerAcceptance" type="checkbox"> Ich nehme das Werk ab</label>
-<label>Unterschrift</label>
+<label class="check"><input id="customerNotPresent" type="checkbox" onchange="toggleCustomerNotPresent()"> Kunde nicht vor Ort</label>
+</div>
+<label id="signatureLabel">Unterschrift</label>
+<div id="signatureArea">
 <canvas id="signatureCanvas" class="signature"></canvas>
 <div class="actions">
 <button type="button" class="secondary small" onclick="clearSignature()">Unterschrift löschen</button>
+</div>
 </div>
 <div id="saveMsg"></div>
 <button type="button" onclick="saveCurrentOrder()">Baustellendaten speichern</button>
@@ -734,7 +746,7 @@ function setupSignature(){
   const pos=e=>{const r=c.getBoundingClientRect(); const t=e.touches?.[0]; return {x:((t?t.clientX:e.clientX)-r.left)*c.width/r.width,y:((t?t.clientY:e.clientY)-r.top)*c.height/r.height};};
   const start=e=>{e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);};
   const move=e=>{if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();signatureDataUrl=c.toDataURL('image/png');};
-  const end=()=>{drawing=false;};
+  const end=()=>{if(drawing){signatureDataUrl=c.toDataURL('image/png');}drawing=false;};
   c.addEventListener('pointerdown',start); c.addEventListener('pointermove',move); c.addEventListener('pointerup',end); c.addEventListener('pointercancel',end);
   c.dataset.ready='1';
 }
@@ -742,8 +754,45 @@ function clearSignature(){
   const c=document.getElementById('signatureCanvas'); if(!c)return;
   const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);signatureDataUrl='';
 }
+function openBox(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.remove('hidden');
+}
+function closeBox(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.add('hidden');
+}
 function toggleEntrySection(checkId,areaId){
   document.getElementById(areaId)?.classList.toggle('hidden',!document.getElementById(checkId)?.checked);
+}
+
+function toggleCustomerNotPresent(){
+  const notPresent=document.getElementById('customerNotPresent')?.checked===true;
+  const area=document.getElementById('signatureArea');
+  const label=document.getElementById('signatureLabel');
+  const canvas=document.getElementById('signatureCanvas');
+  if(area) area.classList.toggle('hidden',notPresent);
+  if(label) label.classList.toggle('hidden',notPresent);
+  if(notPresent) signatureDataUrl='';
+  if(canvas) canvas.style.pointerEvents=notPresent?'none':'';
+}
+
+function resetOrderForm(){
+  const ids=['orderNo','customer','description','hazardText','speciesText','materialText','extraText','contactName','contactAddress','contactPhone','contactEmail','contactNote'];
+  ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.querySelectorAll('input[name=\"billing\"]').forEach(el=>el.checked=false);
+  ['disposalEnabled','materialEnabled','extraEnabled','newContactEnabled','customerAcceptance','customerNotPresent'].forEach(id=>{ const el=document.getElementById(id); if(el) el.checked=false; });
+  toggleCustomerNotPresent();
+  ['disposalArea','materialArea','extraArea','newContactArea','hazard','species'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hidden'); });
+  const dr=document.getElementById('disposalRows'); if(dr) dr.innerHTML='';
+  people = window.currentUser ? [{name:window.currentUser}] : [];
+  workDays=[{date:new Date().toISOString().slice(0,10),sameArrival:false,sameDeparture:false,sameBreak:false,sharedArrival:'',sharedDeparture:'',sharedBreak:0,workers:[],taetigkeiten:{Klettern:0,HAB:0,Fräsen:0,Fräsdurchmesser:0,Schredder:0,Bagger:0,Lader:0,Entsorgung:0}}];
+  renderWorkDays();
+  const c=document.getElementById('signatureCanvas');
+  if(c){ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); signatureDataUrl=''; }
+  const msg=document.getElementById('saveMsg');
+  if(msg) msg.innerHTML='<div class=\"ok\">✓ Gespeichert. Neue Eingabe bereit.</div>';
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 function renderDisposalData(){
   const box=document.getElementById('disposalRows'); if(!box)return;
@@ -786,9 +835,17 @@ async function saveCurrentOrder(){
     if(!d.date){msg.innerHTML=`<div class="error">Bei Tag ${i+1} fehlt das Datum.</div>`;return;}
     for(const w of d.workers){ if(!w.arrival || !w.departure){msg.innerHTML=`<div class="error">Bei Tag ${i+1} fehlen Ankunft oder Abfahrt für ${esc(w.name)}.</div>`;return;} }
   }
-  const hasSignature=!!signatureDataUrl || document.getElementById('customerAcceptance')?.checked===false;
-  if(!signatureDataUrl){
-    if(!confirm('Es wurde keine Unterschrift erfasst. Trotzdem speichern?')) return;
+  const customerAcceptance = document.getElementById('customerAcceptance');
+  if(!customerAcceptance?.checked){
+    msg.innerHTML='<div class="error">Bitte zuerst „Ich nehme das Werk ab“ bestätigen.</div>';
+    customerAcceptance?.focus();
+    return;
+  }
+  const customerNotPresent = document.getElementById('customerNotPresent')?.checked === true;
+  if(!customerNotPresent && !signatureDataUrl){
+    msg.innerHTML='<div class="error">Bitte die Unterschrift des Kunden eintragen oder „Kunde nicht vor Ort“ auswählen.</div>';
+    document.getElementById('signatureCanvas')?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
   }
   savingOrder=true; msg.innerHTML='<div class="pill">Speichere in Supabase …</div>';
   try{
@@ -841,9 +898,17 @@ async function saveCurrentOrder(){
     if(document.getElementById('extraEnabled')?.checked){const r=await supabaseClient.from('zusatzarbeiten').insert({auftrag_id:orderId,beschreibung:document.getElementById('extraText').value.trim()});if(r.error)throw r.error;}
     if(document.getElementById('newContactEnabled')?.checked){const r=await supabaseClient.from('kundenkontakte').insert({auftrag_id:orderId,name:document.getElementById('contactName').value.trim(),adresse:document.getElementById('contactAddress').value.trim(),telefon:document.getElementById('contactPhone').value.trim(),email:document.getElementById('contactEmail').value.trim(),notiz:document.getElementById('contactNote').value.trim()});if(r.error)throw r.error;}
     const pr=await supabaseClient.from('pruefungen').insert({auftrag_id:orderId,gefaehrdungsbeurteilung:true,gefaehrdungsbeurteilung_text:hazardText,artenschutzrechtliche_pruefung:!!document.getElementById('speciesText')?.value.trim(),artenschutz_text:document.getElementById('speciesText')?.value.trim()||null});if(pr.error)throw pr.error;
-    const ka=await supabaseClient.from('kundenabnahmen').insert({auftrag_id:orderId,abgenommen:!!document.getElementById('customerAcceptance')?.checked,signatur_url:signatureDataUrl||null,abgenommen_am:document.getElementById('customerAcceptance')?.checked?new Date().toISOString():null});if(ka.error)throw ka.error;
+    // Kundenabnahme: Bestätigung und echte PNG-Bilddaten der Unterschrift werden gemeinsam gespeichert.
+    const ka=await supabaseClient.from('kundenabnahmen').insert({
+      auftrag_id:orderId,
+      abgenommen:true,
+      signatur_url:customerNotPresent ? null : signatureDataUrl,
+      abgenommen_am:new Date().toISOString()
+    });
+    if(ka.error)throw ka.error;
     msg.innerHTML='<div class="ok">✓ Baustellendaten wurden in Supabase gespeichert.</div>';
     await refreshSupabaseOrders();
+    resetOrderForm();
   }catch(e){
     console.error(e); msg.innerHTML='<div class="error">Speichern in Supabase fehlgeschlagen: '+esc(e.message||e)+'</div>';
   }finally{savingOrder=false;}
