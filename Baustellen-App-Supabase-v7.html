@@ -1,0 +1,1382 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Baustellen-App</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--text:#17202a;--muted:#66717d;--line:#dfe4e8;--accent:#1769aa;--danger:#b42318;--ok:#087443}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:14px 18px;position:sticky;top:0;z-index:5}
+main{max-width:850px;margin:auto;padding:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px #00000008}
+h1,h2,h3{margin:0 0 12px} h1{font-size:21px} h2{font-size:18px}
+label{display:block;font-weight:600;margin:12px 0 6px} input,textarea,select{width:100%;padding:13px;border:1px solid #cbd3da;border-radius:10px;font-size:16px;background:#fff} textarea{min-height:90px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+button{border:0;border-radius:12px;padding:14px 16px;font-size:16px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;margin-top:10px}
+button.secondary{background:#eef2f5;color:#26323d} button.danger{background:#fff0ee;color:var(--danger);border:1px solid #f2c2bc}
+button.small{padding:9px 11px;font-size:14px}.actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}.pill{display:inline-block;padding:5px 9px;border-radius:99px;background:#eef2f5;color:#44515d;font-size:13px}
+.notice{padding:12px;border-radius:10px;background:#fff7df;border:1px solid #f1dc94;margin-top:10px}.error{color:var(--danger);font-weight:600}.ok{color:var(--ok);font-weight:600}
+.person{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0}.check{display:flex;align-items:center;gap:8px;font-weight:500}.check input{width:auto}
+.signature{width:100%;height:190px;border:2px dashed #aeb8c2;border-radius:12px;background:#fff;touch-action:none}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
+@media(max-width:600px){.row,.row3{grid-template-columns:1fr}main{padding:10px}.card{padding:14px}}
+</style>
+
+<style>
+.settings-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.settings-modal.open { display: flex; }
+.settings-modal-card {
+  width: min(620px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.28);
+  padding: 22px;
+}
+.settings-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.settings-modal-head h2 { margin: 0; }
+.settings-close {
+  border: 0;
+  background: #eee;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 18px;
+}
+.settings-button-right {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0;
+}
+</style>
+
+
+<style>
+.dashboard-kpis {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin:18px 0;
+}
+.dashboard-kpi {
+  background:#f5f5f5;
+  border:1px solid #ddd;
+  border-radius:14px;
+  padding:18px;
+}
+.dashboard-kpi .number {
+  font-size:32px;
+  font-weight:700;
+  line-height:1.1;
+}
+.dashboard-kpi .label {
+  margin-top:5px;
+  color:#555;
+}
+.review-list {
+  display:grid;
+  gap:10px;
+}
+.review-item {
+  border:1px solid #ddd;
+  border-radius:12px;
+  padding:14px;
+  background:#fff;
+}
+.review-item-head {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+}
+.review-status {
+  font-weight:600;
+}
+.review-status.open { color:#a15c00; }
+.review-status.done { color:#16733a; }
+.review-actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.edit-modal {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10000;
+}
+.edit-modal.open { display:flex; }
+.edit-card {
+  width:min(900px,94vw);
+  max-height:90vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:16px;
+  padding:22px;
+  box-shadow:0 20px 70px rgba(0,0,0,.3);
+}
+.edit-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.edit-grid .full { grid-column:1/-1; }
+.edit-card label { display:block; font-weight:600; margin-bottom:5px; }
+.edit-card input,.edit-card textarea,.edit-card select {
+  width:100%;
+  box-sizing:border-box;
+  padding:9px;
+  border:1px solid #ccc;
+  border-radius:8px;
+}
+.edit-actions {
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:18px;
+}
+@media(max-width:650px){
+  .dashboard-kpis,.edit-grid{grid-template-columns:1fr;}
+}
+</style>
+
+
+<style id="review-inputmask-style">
+.review-section {
+  border:1px solid #d9d9d9;
+  border-radius:14px;
+  margin:14px 0;
+  padding:16px;
+  background:#fafafa;
+}
+.review-section h3 {
+  margin:0 0 12px 0;
+  font-size:18px;
+}
+.review-section-title {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:12px;
+}
+.review-section-title .badge {
+  font-size:12px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:#e8e8e8;
+  color:#444;
+}
+.review-fields {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.review-field.full { grid-column:1/-1; }
+.review-field label {
+  display:block;
+  font-size:13px;
+  font-weight:600;
+  margin-bottom:5px;
+}
+.review-field input,
+.review-field textarea,
+.review-field select {
+  width:100%;
+  box-sizing:border-box;
+  min-height:40px;
+  padding:9px 10px;
+  border:1px solid #cfcfcf;
+  border-radius:8px;
+  background:#fff;
+}
+.review-activity-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.review-activity {
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:10px;
+  padding:10px;
+}
+.review-activity label {
+  display:block;
+  font-size:13px;
+  font-weight:600;
+  margin-bottom:5px;
+}
+.review-disposal-row {
+  display:grid;
+  grid-template-columns:1fr 120px 2fr;
+  gap:8px;
+  margin-bottom:8px;
+}
+.review-actions-sticky {
+  position:sticky;
+  bottom:0;
+  background:#fff;
+  border-top:1px solid #ddd;
+  padding-top:12px;
+  margin-top:12px;
+}
+@media(max-width:650px){
+  .review-fields,.review-activity-grid{grid-template-columns:1fr;}
+  .review-disposal-row{grid-template-columns:1fr;}
+}
+</style>
+
+
+<style id="dashboard-filter-style">
+.dashboard-filter {
+  border:1px solid #ccc;
+  background:#f2f2f2;
+  border-radius:9px;
+  padding:9px 16px;
+  cursor:pointer;
+}
+.dashboard-filter.active {
+  background:#222;
+  color:#fff;
+  border-color:#222;
+}
+</style>
+
+
+<style id="reviewed-badge-style">
+.reviewed-badge {
+  display:inline-flex;
+  align-items:center;
+  margin-left:6px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:#e5f6e9;
+  color:#16803a;
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header><h1>Baustellen-App <span class="pill" id="statusPill">Entwurf</span></h1></header>
+<main>
+<section id="login" class="card">
+<h2>Anmeldung</h2>
+<label>Eingebender Mitarbeiter wählen</label>
+<select id="loginName">
+<option value="">Bitte Mitarbeiter auswählen</option>
+</select>
+<button onclick="loginEmployee()">Weiter</button>
+
+<button class="secondary" onclick="showAdminLogin()">Administrator</button>
+
+<div id="adminLoginBox" class="hidden">
+<label>Administrator-E-Mail</label>
+<input id="loginEmail" type="email" autocomplete="username" placeholder="E-Mail-Adresse">
+<label>Administrator-Passwort</label>
+<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Passwort eingeben" onkeydown="if(event.key==='Enter') loginAdmin()">
+<button onclick="loginAdmin()">Administrator anmelden</button>
+</div>
+<div id="loginMsg" class="error"></div>
+</section>
+
+<section id="admin" class="hidden">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+<h2 style="margin:0;">Administrator-Dashboard</h2>
+<button type="button" class="secondary" onclick="openSettings()" style="margin-top:0;">Einstellungen</button>
+</div>
+<div id="dashboardReviewArea"></div>
+
+
+<p>Hier werden Baustellendatensätze geprüft, korrigiert und anschließend für die Istdaten-Übernahme freigegeben.</p>
+<div class="actions">
+
+</div>
+</div>
+
+<div id="adminOverview" class="card">
+
+<div id="adminOrders"></div>
+</div>
+
+<div id="adminSettings" class="card hidden">
+<h2>Einstellungen</h2>
+<label>Mitarbeiter hinterlegen</label>
+<div id="adminEmployees"></div>
+<button class="secondary" onclick="addAdminEmployee()">+ Mitarbeiter</button>
+<hr style="margin:20px 0;border:0;border-top:1px solid #dfe4e8">
+<label>Vorarbeiter hinterlegen</label>
+<div id="adminForemen"></div>
+<button class="secondary" onclick="addAdminForeman()">+ Vorarbeiter</button>
+<hr style="margin:20px 0;border:0;border-top:1px solid #dfe4e8">
+<label>Administrator-Passwort</label>
+<input id="adminPasswordSetting" type="password" autocomplete="new-password" placeholder="Neues Passwort">
+<div class="notice">Das Startpasswort lautet <b>Test</b>. Hier kann es jederzeit geändert werden.</div>
+<button onclick="saveAdminSettings()">Einstellungen speichern</button>
+</div>
+</section>
+
+<section id="app" class="hidden">
+<div class="card">
+<h2>Auftrag</h2>
+<div class="row">
+<div><label>Auftragsnummer *</label><input id="orderNo"></div>
+<div><label>Kundenname *</label><input id="customer"></div>
+</div>
+<label>Auftragsbeschreibung *</label><textarea id="description"></textarea>
+<label>Abrechnung</label>
+<div class="actions">
+<label class="check"><input type="radio" name="billing" value="Festpreis"> Festpreis</label>
+<label class="check"><input type="radio" name="billing" value="Aufwand"> Aufwand</label>
+</div>
+</div>
+
+<div class="card">
+<h2>Mitarbeiter</h2>
+<div id="people"></div>
+<button class="secondary" onclick="addPerson()">+ Mitarbeiter</button>
+</div>
+
+<div class="card">
+<h2>Prüfungen</h2>
+<div class="actions">
+<button onclick="openBox('hazard')">Gefährdungsbeurteilung *</button>
+<button class="secondary" onclick="openBox('species')">Artenschutzrechtliche Prüfung</button>
+</div>
+<div id="hazard" class="card hidden">
+<h2>Gefährdungsbeurteilung</h2>
+<label>Gefährdungen und Maßnahmen *</label>
+<textarea id="hazardText" placeholder="Eingabe erforderlich"></textarea>
+<button class="secondary" onclick="closeBox('hazard')">Fertig</button>
+</div>
+<div id="species" class="card hidden">
+<h2>Artenschutzrechtliche Prüfung</h2>
+<label>Ergebnis / Maßnahmen</label>
+<textarea id="speciesText" placeholder="Optional"></textarea>
+<button class="secondary" onclick="closeBox('species')">Fertig</button>
+</div>
+</div>
+
+<div class="card">
+<h2>Arbeitszeiten</h2>
+<p class="pill">Mehrere Baustellentage möglich</p>
+<div id="workDays"></div>
+<button class="secondary" onclick="addWorkDay()">+ weiterer Tag</button>
+</div>
+<div class="notice">Die Tätigkeiten werden für <b>jeden Baustellentag separat</b> in der jeweiligen Tageskarte erfasst.</div>
+
+<div class="card">
+<h2>Entsorgung</h2>
+<label class="check"><input id="disposalEnabled" type="checkbox" onchange="toggleEntrySection('disposalEnabled','disposalArea')"> Entsorgung erfassen</label>
+<div id="disposalArea" class="hidden">
+<div id="disposalRows"></div>
+<button type="button" class="secondary" onclick="addDisposalEntry()">+ weitere Entsorgung</button>
+</div>
+</div>
+
+<div class="card">
+<h2>Material</h2>
+<label class="check"><input id="materialEnabled" type="checkbox" onchange="toggleEntrySection('materialEnabled','materialArea')"> Material erfassen</label>
+<div id="materialArea" class="hidden">
+<label>Material</label><textarea id="materialText" placeholder="Material und eingesetzte Betriebsmittel"></textarea>
+</div>
+</div>
+
+<div class="card">
+<h2>Zusatzarbeiten</h2>
+<label class="check"><input id="extraEnabled" type="checkbox" onchange="toggleEntrySection('extraEnabled','extraArea')"> Zusatzarbeiten erfassen</label>
+<div id="extraArea" class="hidden">
+<label>Beschreibung der Zusatzarbeiten</label><textarea id="extraText"></textarea>
+</div>
+</div>
+
+<div class="card">
+<h2>Neuer Kundenkontakt</h2>
+<label class="check"><input id="newContactEnabled" type="checkbox" onchange="toggleEntrySection('newContactEnabled','newContactArea')"> Neuer Kundenkontakt</label>
+<div id="newContactArea" class="hidden">
+<div class="row">
+<div><label>Name</label><input id="contactName"></div>
+<div><label>Telefon</label><input id="contactPhone" type="tel"></div>
+</div>
+<label>Adresse</label><input id="contactAddress">
+<label>E-Mail</label><input id="contactEmail" type="email">
+<label>Bemerkung</label><textarea id="contactNote"></textarea>
+</div>
+</div>
+
+<div class="card">
+<h2>Kundenabnahme</h2>
+<label class="check"><input id="customerAcceptance" type="checkbox"> Ich nehme das Werk ab</label>
+<label>Unterschrift</label>
+<canvas id="signatureCanvas" class="signature"></canvas>
+<div class="actions">
+<button type="button" class="secondary small" onclick="clearSignature()">Unterschrift löschen</button>
+</div>
+<div id="saveMsg"></div>
+<button type="button" onclick="saveCurrentOrder()">Baustellendaten speichern</button>
+</div>
+
+</section>
+</main>
+<script>
+const SUPABASE_URL = 'https://vbpnseaxosibvqsbtbmb.supabase.co';
+const SUPABASE_PUBLIC_KEY = 'sb_publishable_lwikRnj3CHZbo12mFkmDRA_mHOPGba0';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+let people=[];
+let supabaseOrders=[];
+
+let workDays=[{date:new Date().toISOString().slice(0,10),sameArrival:false,sameDeparture:false,sameBreak:false,sharedArrival:"",sharedDeparture:"",sharedBreak:0,workers:[],taetigkeiten:{Klettern:0,HAB:0,Fräsen:0,Fräsdurchmesser:0,Schredder:0,Bagger:0,Lader:0,Entsorgung:0}}];
+
+function ensureWorkers(day){
+  if(!Array.isArray(day.workers)) day.workers=[];
+  people.forEach(p=>{
+    if(!day.workers.some(w=>w.name===p.name)) day.workers.push({name:p.name,arrival:"",departure:"",breakMin:0});
+  });
+  day.workers=day.workers.filter(w=>people.some(p=>p.name===w.name));
+  if(!day.taetigkeiten) day.taetigkeiten={Klettern:0,HAB:0,Fräsen:0,Fräsdurchmesser:0,Schredder:0,Bagger:0,Lader:0,Entsorgung:0};
+}
+function addWorkDay(){
+  workDays.push({date:new Date().toISOString().slice(0,10),sameArrival:false,sameDeparture:false,sameBreak:false,sharedArrival:"",sharedDeparture:"",sharedBreak:0,workers:[],taetigkeiten:{Klettern:0,HAB:0,Fräsen:0,Fräsdurchmesser:0,Schredder:0,Bagger:0,Lader:0,Entsorgung:0}});
+  renderWorkDays();
+}
+function updatePersonName(i,value){
+  const old=people[i]?.name||''; const name=value.trim();
+  if(!name)return;
+  if(people.some((p,idx)=>idx!==i && p.name===name)){alert('Dieser Mitarbeiter ist bereits vorhanden.');renderPeople();return;}
+  people[i].name=name;
+  workDays.forEach(d=>{const w=d.workers.find(x=>x.name===old);if(w)w.name=name;ensureWorkers(d);});
+  renderPeople();renderWorkDays();
+}
+function removePerson(i){
+  const old=people[i]?.name||'';
+  people.splice(i,1);
+  workDays.forEach(d=>{d.workers=d.workers.filter(w=>w.name!==old);});
+  renderPeople();renderWorkDays();
+}
+function addPerson(name){
+  if(name){
+    if(!people.some(p=>p.name===name)) people.push({name});
+  }else{
+    people.push({name:''});
+  }
+  renderPeople();renderWorkDays();
+  setTimeout(()=>{const inputs=document.querySelectorAll('#people .new-person-name');const last=inputs[inputs.length-1];if(last&&!last.value)last.focus();},0);
+}
+function renderPeople(){
+  const box=document.getElementById('people');if(!box)return;
+  box.innerHTML=people.map((p,i)=>`<div class="person">
+    <div class="row">
+      <div><label>Mitarbeiter ${i+1}</label><input class="new-person-name" value="${esc(p.name||'')}" placeholder="Neuen Mitarbeiter eingeben" onchange="updatePersonName(${i},this.value)"></div>
+      <div style="display:flex;align-items:flex-end;"><button type="button" class="danger small" onclick="removePerson(${i})">Entfernen</button></div>
+    </div>
+  </div>`).join('');
+}
+function setDayActivity(di,key,value){ensureWorkers(workDays[di]);workDays[di].taetigkeiten[key]=Number(value||0);if(key==='Fräsen')workDays[di].taetigkeiten.Fräsdurchmesser=Number(document.getElementById('dayFraesenDiameter_'+di)?.value||0);}
+function toggleDayDiameter(di){document.getElementById('dayFraesenDiameterBox_'+di)?.classList.toggle('hidden',!document.getElementById('dayFraesenDiameterEnabled_'+di)?.checked);}
+function renderWorkDays(){
+  const box=document.getElementById('workDays'); if(!box)return;
+  workDays.forEach(ensureWorkers);
+  box.innerHTML=workDays.map((d,di)=>{
+    const t=d.taetigkeiten||{};
+    const diameter=Number(t.Fräsdurchmesser||0);
+    return `<div class="person">
+      <h3>Tag ${di+1}</h3>
+      <label>Datum</label><input type="date" value="${esc(d.date)}" onchange="workDays[${di}].date=this.value">
+      <label class="check"><input type="checkbox" ${d.sameArrival?'checked':''} onchange="workDays[${di}].sameArrival=this.checked;renderWorkDays()"> Alle Mitarbeiter gleiche Ankunft</label>
+      ${d.sameArrival?`<label>Ankunft für alle</label><input type="time" value="${esc(d.sharedArrival)}" onchange="workDays[${di}].sharedArrival=this.value;workDays[${di}].workers.forEach(w=>w.arrival=this.value)">`:''}
+      <label class="check"><input type="checkbox" ${d.sameDeparture?'checked':''} onchange="workDays[${di}].sameDeparture=this.checked;renderWorkDays()"> Alle Mitarbeiter gleiche Abfahrt</label>
+      ${d.sameDeparture?`<label>Abfahrt für alle</label><input type="time" value="${esc(d.sharedDeparture)}" onchange="workDays[${di}].sharedDeparture=this.value;workDays[${di}].workers.forEach(w=>w.departure=this.value)">`:''}
+      <label class="check"><input type="checkbox" ${d.sameBreak?'checked':''} onchange="workDays[${di}].sameBreak=this.checked;renderWorkDays()"> Alle Mitarbeiter gleiche Pause</label>
+      ${d.sameBreak?`<label>Pause für alle (Minuten)</label><input type="number" min="0" value="${Number(d.sharedBreak||0)}" onchange="workDays[${di}].sharedBreak=Number(this.value||0);workDays[${di}].workers.forEach(w=>w.breakMin=Number(this.value||0))">`:''}
+      <div class="notice">Mitarbeiter dieses Tages</div>
+      ${d.workers.map((w,wi)=>`<div class="person"><b>${esc(w.name)}</b><div class="row">
+        ${d.sameArrival?'':`<div><label>Ankunft</label><input type="time" value="${esc(w.arrival)}" onchange="workDays[${di}].workers[${wi}].arrival=this.value"></div>`}
+        ${d.sameDeparture?'':`<div><label>Abfahrt</label><input type="time" value="${esc(w.departure)}" onchange="workDays[${di}].workers[${wi}].departure=this.value"></div>`}
+      </div>${d.sameBreak?'':`<label>Pause (Minuten)</label><input type="number" min="0" value="${Number(w.breakMin||0)}" onchange="workDays[${di}].workers[${wi}].breakMin=Number(this.value||0)">`}</div>`).join('')}
+      <div class="notice"><b>Tätigkeiten für Tag ${di+1}</b> – Eingabe in Minuten</div>
+      <div class="row3">
+        <div><label>Klettern</label><input type="number" min="0" value="${Number(t.Klettern||0)}" onchange="setDayActivity(${di},'Klettern',this.value)"></div>
+        <div><label>HAB</label><input type="number" min="0" value="${Number(t.HAB||0)}" onchange="setDayActivity(${di},'HAB',this.value)"></div>
+        <div><label>Fräsen</label><input type="number" min="0" value="${Number(t.Fräsen||0)}" onchange="setDayActivity(${di},'Fräsen',this.value)"></div>
+      </div>
+      <label class="check"><input id="dayFraesenDiameterEnabled_${di}" type="checkbox" ${diameter>0?'checked':''} onchange="toggleDayDiameter(${di})"> Fräsdurchmesser erfassen</label>
+      <div id="dayFraesenDiameterBox_${di}" class="${diameter>0?'':'hidden'}"><label>Fräsdurchmesser (cm)</label><input id="dayFraesenDiameter_${di}" type="number" min="0" value="${diameter}" onchange="setDayActivity(${di},'Fräsen',workDays[${di}].taetigkeiten.Fräsen)"></div>
+      <div class="row3">
+        <div><label>Schredder</label><input type="number" min="0" value="${Number(t.Schredder||0)}" onchange="setDayActivity(${di},'Schredder',this.value)"></div>
+        <div><label>Bagger</label><input type="number" min="0" value="${Number(t.Bagger||0)}" onchange="setDayActivity(${di},'Bagger',this.value)"></div>
+        <div><label>Lader</label><input type="number" min="0" value="${Number(t.Lader||0)}" onchange="setDayActivity(${di},'Lader',this.value)"></div>
+      </div>
+      <label>Entsorgung Tätigkeit (Minuten)</label><input type="number" min="0" value="${Number(t.Entsorgung||0)}" onchange="setDayActivity(${di},'Entsorgung',this.value)">
+    </div>`;
+  }).join('');
+}
+function getAdminPassword(){
+ const st=getSettings();
+ return st.adminPassword || 'Test';
+}
+function toggleLoginPassword(){
+ const isAdmin=document.getElementById('loginName').value==='__ADMIN__';
+ document.getElementById('loginPasswordBox').classList.toggle('hidden',!isAdmin);
+ if(!isAdmin) document.getElementById('loginPassword').value='';
+ renderLoginUsers();
+}
+function renderLoginUsers(){
+ const sel=document.getElementById('loginName');
+ const current=sel.value;
+ const st=getSettings();
+ sel.innerHTML='<option value="">Bitte auswählen</option><option value="__ADMIN__">Administrator</option>' +
+   st.foremen.filter(Boolean).map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+ if([...sel.options].some(o=>o.value===current)) sel.value=current;
+}
+function login(){
+ const n=document.getElementById('loginName').value;
+ const msg=document.getElementById('loginMsg');
+ if(!n){msg.textContent='Bitte Benutzer auswählen.';return}
+ if(n==='__ADMIN__'){
+   const entered=document.getElementById('loginPassword').value;
+   if(entered!==getAdminPassword()){
+     msg.textContent='Falsches Administrator-Passwort.';
+     document.getElementById('loginPassword').focus();
+     return;
+   }
+   msg.textContent='';
+   document.getElementById('login').classList.add('hidden');
+   document.getElementById('admin').classList.remove('hidden');
+   loadAdminData();
+   return;
+ }
+ msg.textContent='';
+ document.getElementById('login').classList.add('hidden');
+ document.getElementById('app').classList.remove('hidden');
+ document.getElementById('loginName').dataset.user=n;
+ addPerson(n); setupSignature(); renderWorkDays(); renderDisposalData();
+}
+function showAdminTab(tab){
+ document.getElementById('adminOverview').classList.toggle('hidden',tab!=='overview');
+ document.getElementById('adminSettings').classList.toggle('hidden',tab!=='settings');
+}
+async function loadAdminData(){
+  const {error}=await refreshSupabaseOrders();
+  const box=document.getElementById('adminOrders');
+  if(error){box.innerHTML='<div class="error">Supabase-Daten konnten nicht geladen werden: '+esc(error.message||error)+'</div>';return;}
+  if(!supabaseOrders.length){box.innerHTML='<p class="pill">Noch keine Aufträge in Supabase vorhanden.</p>';}
+  else box.innerHTML=supabaseOrders.map(o=>`<div class="person"><b>${esc(o.auftragsnummer)} – ${esc(o.kundenname)}</b><p>${esc(o.auftragsbeschreibung)}</p><span class="pill">Status: ${esc(o.status||'offen')}</span><div class="actions"><button class="small" onclick="openFullOrderEditor('${encodeURIComponent(o.auftragsnummer)}')">Daten prüfen / korrigieren</button><button class="secondary small" onclick="approveOrder('${encodeURIComponent(o.auftragsnummer)}')"></button></div></div>`).join('');
+  renderAdminSettings();
+}
+
+function editAdminOrder(no){
+ const key='baustellen_'+no, raw=localStorage.getItem(key);
+ if(!raw){alert('Datensatz nicht gefunden.');return}
+ const o=JSON.parse(raw);
+ const desc=prompt('Auftragsbeschreibung korrigieren:',o.auftragsbeschreibung||'');
+ if(desc===null)return;
+ o.auftragsbeschreibung=desc;
+ o.admin_geprueft=true;
+ o.updated_at=new Date().toISOString();
+ localStorage.setItem(key,JSON.stringify(o));
+ loadAdminData();
+}
+function releaseIstdaten(no){
+ const key='baustellen_'+no, raw=localStorage.getItem(key);
+ if(!raw){alert('Datensatz nicht gefunden.');return}
+ const o=JSON.parse(raw);
+ if(!o.admin_geprueft){alert('Bitte den Datensatz zuerst prüfen bzw. bestätigen.');return}
+ o.istdaten_freigegeben=true;
+ o.status='Istdaten freigegeben';
+ o.updated_at=new Date().toISOString();
+ localStorage.setItem(key,JSON.stringify(o));
+ alert('Datensatz wurde für die Istdaten-Übernahme freigegeben.');
+ loadAdminData();
+}
+function getSettings(){
+ try{
+   const st=JSON.parse(localStorage.getItem('baustellen_settings')||'{"employees":[],"foremen":[],"adminPassword":"Test"}');
+   if(!st.adminPassword) st.adminPassword='Test';
+   if(!Array.isArray(st.employees)) st.employees=[];
+   if(!Array.isArray(st.foremen)) st.foremen=[];
+   if(typeof st.linkEmployeesToLogin !== 'boolean') st.linkEmployeesToLogin=true;
+   return st;
+ }catch(e){return {employees:['Ralf Möller'],foremen:[],adminPassword:'Test',linkEmployeesToLogin:true}}
+}
+function renderAdminSettings(){
+ const st=getSettings();
+ document.getElementById('adminEmployees').innerHTML=st.employees.map((x,i)=>`<div class="row"><input value="${esc(x)}" onchange="getSettings().employees[${i}]=this.value"><button class="danger small" onclick="removeAdminEmployee(${i})">Entfernen</button></div>`).join('');
+ document.getElementById('adminForemen').innerHTML=st.foremen.map((x,i)=>`<div class="row"><input value="${esc(x)}" onchange="getSettings().foremen[${i}]=this.value"><button class="danger small" onclick="removeAdminForeman(${i})">Entfernen</button></div>`).join('');
+ const pw=document.getElementById('adminPasswordSetting');
+ if(pw) pw.value='';
+}
+function addAdminEmployee(){const st=getSettings();st.employees.push('');localStorage.setItem('baustellen_settings',JSON.stringify(st));renderAdminSettings()}
+function addAdminForeman(){const st=getSettings();st.foremen.push('');localStorage.setItem('baustellen_settings',JSON.stringify(st));renderAdminSettings()}
+function removeAdminEmployee(i){const st=getSettings();st.employees.splice(i,1);localStorage.setItem('baustellen_settings',JSON.stringify(st));renderAdminSettings()}
+function removeAdminForeman(i){const st=getSettings();st.foremen.splice(i,1);localStorage.setItem('baustellen_settings',JSON.stringify(st));renderAdminSettings()}
+function saveAdminSettings(){
+ const inputs=[...document.querySelectorAll('#adminEmployees input')];
+ const fore=[...document.querySelectorAll('#adminForemen input')];
+ const old=getSettings();
+ const pw=document.getElementById('adminPasswordSetting')?.value.trim();
+ const st={
+   employees:inputs.map(x=>x.value.trim()).filter(Boolean),
+   foremen:fore.map(x=>x.value.trim()).filter(Boolean),
+   adminPassword:pw || old.adminPassword || 'Test'
+ };
+ localStorage.setItem('baustellen_settings',JSON.stringify(st));
+ alert(pw ? 'Einstellungen und Administrator-Passwort gespeichert.' : 'Einstellungen gespeichert.');
+ renderAdminSettings();
+ renderLoginUsers();
+}
+
+
+// --- Anmeldung ---
+function showAdminLogin(){
+  const box=document.getElementById('adminLoginBox');
+  box.classList.remove('hidden');
+  document.getElementById('loginPassword').focus();
+  document.getElementById('loginMsg').textContent='';
+}
+async function loginEmployee(){
+  const n=document.getElementById('loginName').value;
+  const msg=document.getElementById('loginMsg');
+  if(!n){msg.textContent='Bitte einen Mitarbeiter auswählen.';return;}
+  msg.textContent='';
+  try {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if(!sessionData?.session){
+      const { error } = await supabaseClient.auth.signInAnonymously();
+      if(error) throw error;
+    }
+  } catch(e) {
+    msg.textContent='Anmeldung an Supabase nicht möglich: '+(e.message||e);
+    return;
+  }
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  people=[];
+  window.currentUser=n;
+  if(typeof addPerson==='function') addPerson(n);
+  if(typeof setupSignature==='function') setupSignature();
+  if(typeof renderWorkDays==='function') renderWorkDays();
+  if(typeof renderDisposalData==='function') renderDisposalData();
+}
+
+async function loginAdmin(){
+  const email=document.getElementById('loginEmail')?.value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const msg=document.getElementById('loginMsg');
+  if(!email || !password){msg.textContent='Bitte E-Mail-Adresse und Passwort eingeben.';return;}
+  msg.textContent='Anmeldung wird geprüft …';
+  const { error } = await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){msg.textContent='Administrator-Anmeldung fehlgeschlagen: '+error.message;return;}
+  const { data: me, error: meError } = await supabaseClient.from('benutzer').select('rolle,aktiv').eq('auth_user_id',(await supabaseClient.auth.getUser()).data.user.id).maybeSingle();
+  if(meError || !me || me.rolle!=='administrator' || !me.aktiv){
+    await supabaseClient.auth.signOut();
+    msg.textContent='Dieser Benutzer ist nicht als Administrator freigeschaltet.';
+    return;
+  }
+  msg.textContent='';
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('admin').classList.remove('hidden');
+  await loadAdminData();
+}
+
+async function renderLoginEmployees(){
+  const sel=document.getElementById('loginName');
+  if(!sel)return;
+  const { data, error } = await supabaseClient.from('mitarbeiter').select('name').eq('aktiv',true).order('name');
+  // Zuerst die zentralen Mitarbeiter aus Supabase laden.
+  // Wenn die Tabelle noch leer ist oder kurzfristig nicht erreichbar ist,
+  // auf die lokal hinterlegten Mitarbeiter zurückfallen, damit die Anmeldung
+  // nicht mit einer leeren Auswahl startet.
+  if(!error && Array.isArray(data) && data.length){
+    sel.innerHTML='<option value="">Bitte Mitarbeiter auswählen</option>'+data.map(x=>`<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('');
+    return;
+  }
+  const st=getSettings();
+  let employees=(st.employees||[]).filter(Boolean);
+  if(!employees.length) employees=['Ralf Möller'];
+  sel.innerHTML='<option value="">Bitte Mitarbeiter auswählen</option>'+employees.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+}
+
+// Supabase-Datenspeicherung
+let signatureDataUrl = '';
+let savingOrder = false;
+
+function setupSignature(){
+  const c=document.getElementById('signatureCanvas');
+  if(!c || c.dataset.ready==='1') return;
+  c.width=Math.max(600, c.clientWidth*2);
+  c.height=380;
+  const ctx=c.getContext('2d');
+  ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round';
+  let drawing=false;
+  const pos=e=>{const r=c.getBoundingClientRect(); const t=e.touches?.[0]; return {x:((t?t.clientX:e.clientX)-r.left)*c.width/r.width,y:((t?t.clientY:e.clientY)-r.top)*c.height/r.height};};
+  const start=e=>{e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);};
+  const move=e=>{if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();signatureDataUrl=c.toDataURL('image/png');};
+  const end=()=>{drawing=false;};
+  c.addEventListener('pointerdown',start); c.addEventListener('pointermove',move); c.addEventListener('pointerup',end); c.addEventListener('pointercancel',end);
+  c.dataset.ready='1';
+}
+function clearSignature(){
+  const c=document.getElementById('signatureCanvas'); if(!c)return;
+  const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);signatureDataUrl='';
+}
+function toggleEntrySection(checkId,areaId){
+  document.getElementById(areaId)?.classList.toggle('hidden',!document.getElementById(checkId)?.checked);
+}
+function renderDisposalData(){
+  const box=document.getElementById('disposalRows'); if(!box)return;
+  if(!box.children.length) addDisposalEntry();
+}
+function addDisposalEntry(){
+  const box=document.getElementById('disposalRows'); if(!box)return;
+  const div=document.createElement('div'); div.className='person disposal-row';
+  div.innerHTML='<div class="row3"><div><label>Menge</label><input class="disp-qty" type="number" min="0" step="0.01"></div><div><label>Einheit</label><select class="disp-unit"><option>m³</option><option>Tonnen</option></select></div><div><label>Material</label><input class="disp-material"></div></div>';
+  box.appendChild(div);
+}
+function getDisposalEntries(){
+  return [...document.querySelectorAll('#disposalRows .disposal-row')].map(r=>({
+    menge:r.querySelector('.disp-qty')?.value||'',
+    einheit:r.querySelector('.disp-unit')?.value||'m³',
+    material:r.querySelector('.disp-material')?.value.trim()||''
+  })).filter(x=>x.menge!==''||x.material!=='');
+}
+async function getOrCreateMitarbeiter(name){
+  const clean=String(name||'').trim(); if(!clean) throw new Error('Mitarbeitername fehlt.');
+  const q=await supabaseClient.from('mitarbeiter').select('id,name').eq('name',clean).eq('aktiv',true).limit(1);
+  if(!q.error && q.data?.length) return q.data[0];
+  const ins=await supabaseClient.from('mitarbeiter').insert({name:clean,aktiv:true,vorarbeiter:false,auth_user_id:null}).select('id,name').single();
+  if(ins.error) throw ins.error; return ins.data;
+}
+async function saveCurrentOrder(){
+  if(savingOrder)return;
+  const msg=document.getElementById('saveMsg');
+  const orderNo=document.getElementById('orderNo')?.value.trim();
+  const customer=document.getElementById('customer')?.value.trim();
+  const description=document.getElementById('description')?.value.trim();
+  const hazardText=document.getElementById('hazardText')?.value.trim();
+  if(!orderNo){msg.innerHTML='<div class="error">Bitte Auftragsnummer eingeben.</div>';return;}
+  if(!customer){msg.innerHTML='<div class="error">Bitte Kundenname eingeben.</div>';return;}
+  if(!description){msg.innerHTML='<div class="error">Bitte Auftragsbeschreibung eingeben.</div>';return;}
+  const validPeople=people.map(p=>p.name.trim()).filter(Boolean);
+  if(!validPeople.length){msg.innerHTML='<div class="error">Bitte mindestens einen Mitarbeiter auswählen/eingeben.</div>';return;}
+  if(!hazardText){msg.innerHTML='<div class="error">Die Gefährdungsbeurteilung ist Pflicht.</div>';document.getElementById('hazard')?.classList.remove('hidden');return;}
+  for(const [i,d] of workDays.entries()){
+    if(!d.date){msg.innerHTML=`<div class="error">Bei Tag ${i+1} fehlt das Datum.</div>`;return;}
+    for(const w of d.workers){ if(!w.arrival || !w.departure){msg.innerHTML=`<div class="error">Bei Tag ${i+1} fehlen Ankunft oder Abfahrt für ${esc(w.name)}.</div>`;return;} }
+  }
+  const hasSignature=!!signatureDataUrl || document.getElementById('customerAcceptance')?.checked===false;
+  if(!signatureDataUrl){
+    if(!confirm('Es wurde keine Unterschrift erfasst. Trotzdem speichern?')) return;
+  }
+  savingOrder=true; msg.innerHTML='<div class="pill">Speichere in Supabase …</div>';
+  try{
+    const sess=await supabaseClient.auth.getSession();
+    if(!sess.data?.session){
+      const a=await supabaseClient.auth.signInAnonymously();
+      if(a.error) throw a.error;
+    }
+    const user=(await supabaseClient.auth.getUser()).data.user;
+    const billing=document.querySelector('input[name="billing"]:checked')?.value||null;
+    const orderPayload={auftragsnummer:orderNo,kundenname:customer,auftragsbeschreibung:description,erstellt_von:user?.id||null,status:'erfasst',admin_geprueft:false,istdaten_freigegeben:false,updated_at:new Date().toISOString()};
+    const existing=await supabaseClient.from('auftraege').select('id').eq('auftragsnummer',orderNo).maybeSingle();
+    if(existing.error) throw existing.error;
+    let orderId;
+    if(existing.data?.id){
+      orderId=existing.data.id;
+      const up=await supabaseClient.from('auftraege').update({...orderPayload}).eq('id',orderId).select('id').single();
+      if(up.error) throw up.error;
+    }else{
+      const ins=await supabaseClient.from('auftraege').insert(orderPayload).select('id').single();
+      if(ins.error) throw ins.error; orderId=ins.data.id;
+    }
+    // Kinder-Datensätze bei erneutem Speichern sauber neu aufbauen.
+    await supabaseClient.from('arbeitstage').delete().eq('auftrag_id',orderId);
+    await supabaseClient.from('material').delete().eq('auftrag_id',orderId);
+    await supabaseClient.from('zusatzarbeiten').delete().eq('auftrag_id',orderId);
+    await supabaseClient.from('kundenkontakte').delete().eq('auftrag_id',orderId);
+    await supabaseClient.from('pruefungen').delete().eq('auftrag_id',orderId);
+    await supabaseClient.from('kundenabnahmen').delete().eq('auftrag_id',orderId);
+    for(const d of workDays){
+      const dayIns=await supabaseClient.from('arbeitstage').insert({auftrag_id:orderId,datum:d.date}).select('id').single();
+      if(dayIns.error) throw dayIns.error;
+      const dayId=dayIns.data.id;
+      for(const w of d.workers){
+        const emp=await getOrCreateMitarbeiter(w.name);
+        const t=await supabaseClient.from('arbeitszeiten').insert({arbeitstag_id:dayId,mitarbeiter_id:emp.id,ankunft:w.arrival,abfahrt:w.departure,pause_minuten:Number(w.breakMin||0)});
+        if(t.error) throw t.error;
+        const ta=d.taetigkeiten||{};
+        const act=await supabaseClient.from('taetigkeiten').insert({arbeitstag_id:dayId,mitarbeiter_id:emp.id,klettern_minuten:Number(ta.Klettern||0),hab_minuten:Number(ta.HAB||0),fraesen_minuten:Number(ta.Fräsen||0),fraesen_durchmesser:Number(ta.Fräsdurchmesser||0)||null,schredder_minuten:Number(ta.Schredder||0),bagger_minuten:Number(ta.Bagger||0),lader_minuten:Number(ta.Lader||0),entsorgung_minuten:Number(ta.Entsorgung||0)});
+        if(act.error) throw act.error;
+      }
+      if(document.getElementById('disposalEnabled')?.checked){
+        for(const e of getDisposalEntries()){
+          const r=await supabaseClient.from('entsorgung').insert({arbeitstag_id:dayId,menge:e.menge||null,einheit:e.einheit,material:e.material});
+          if(r.error) throw r.error;
+        }
+      }
+    }
+    if(document.getElementById('materialEnabled')?.checked){const r=await supabaseClient.from('material').insert({auftrag_id:orderId,beschreibung:document.getElementById('materialText').value.trim()});if(r.error)throw r.error;}
+    if(document.getElementById('extraEnabled')?.checked){const r=await supabaseClient.from('zusatzarbeiten').insert({auftrag_id:orderId,beschreibung:document.getElementById('extraText').value.trim()});if(r.error)throw r.error;}
+    if(document.getElementById('newContactEnabled')?.checked){const r=await supabaseClient.from('kundenkontakte').insert({auftrag_id:orderId,name:document.getElementById('contactName').value.trim(),adresse:document.getElementById('contactAddress').value.trim(),telefon:document.getElementById('contactPhone').value.trim(),email:document.getElementById('contactEmail').value.trim(),notiz:document.getElementById('contactNote').value.trim()});if(r.error)throw r.error;}
+    const pr=await supabaseClient.from('pruefungen').insert({auftrag_id:orderId,gefaehrdungsbeurteilung:true,gefaehrdungsbeurteilung_text:hazardText,artenschutzrechtliche_pruefung:!!document.getElementById('speciesText')?.value.trim(),artenschutz_text:document.getElementById('speciesText')?.value.trim()||null});if(pr.error)throw pr.error;
+    const ka=await supabaseClient.from('kundenabnahmen').insert({auftrag_id:orderId,abgenommen:!!document.getElementById('customerAcceptance')?.checked,signatur_url:signatureDataUrl||null,abgenommen_am:document.getElementById('customerAcceptance')?.checked?new Date().toISOString():null});if(ka.error)throw ka.error;
+    msg.innerHTML='<div class="ok">✓ Baustellendaten wurden in Supabase gespeichert.</div>';
+    await refreshSupabaseOrders();
+  }catch(e){
+    console.error(e); msg.innerHTML='<div class="error">Speichern in Supabase fehlgeschlagen: '+esc(e.message||e)+'</div>';
+  }finally{savingOrder=false;}
+}
+
+// Grundfunktionen
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  renderLoginEmployees();
+  const st=getSettings();
+  if(!localStorage.getItem('baustellen_settings')){
+    localStorage.setItem('baustellen_settings',JSON.stringify(st));
+  }
+});
+</script>
+
+<div class="settings-modal" id="settingsModal" onclick="if(event.target===this) closeSettings()">
+  <div class="settings-modal-card">
+    <div class="settings-modal-head">
+      <h2>Einstellungen</h2>
+      <button class="settings-close" type="button" onclick="closeSettings()">×</button>
+    </div>
+
+    <h3>Mitarbeiter</h3>
+    <p class="pill">Die hier hinterlegten Mitarbeiter werden für die Anmeldung verwendet.</p>
+    <div id="settingsEmployees"></div>
+    <button type="button" onclick="addEmployee()">+ Mitarbeiter hinzufügen</button>
+
+    <hr style="margin:20px 0;border:0;border-top:1px solid #dfe4e8">
+
+    <h3>Verknüpfung Daten zu Anmeldemaske</h3>
+    <label class="check">
+      <input id="settingsLinkLogin" type="checkbox">
+      Mitarbeiter aus den Einstellungen automatisch in der Anmeldemaske anzeigen
+    </label>
+    <div class="notice">Wenn diese Verknüpfung aktiv ist, werden die gespeicherten Mitarbeiternamen direkt in der Auswahl „Eingebender Mitarbeiter wählen“ verwendet.</div>
+
+    <div class="actions" style="justify-content:flex-end;margin-top:16px;">
+      <button type="button" class="secondary" onclick="closeSettings()">Schließen</button>
+      <button type="button" onclick="saveSettings()">Einstellungen speichern</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+function openSettings() {
+  const modal = document.getElementById('settingsModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  renderSettings();
+}
+
+function closeSettings() {
+  const modal = document.getElementById('settingsModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function renderSettings() {
+  const st = getSettings();
+  const box = document.getElementById('settingsEmployees');
+  if (!box) return;
+  box.innerHTML = st.employees.map((name, i) => `
+    <div class="row" style="align-items:center;margin:8px 0;">
+      <input value="${escapeHtml(name)}" data-settings-employee="${i}" placeholder="Mitarbeitername">
+      <button type="button" class="danger small" onclick="removeEmployee(${i})">Entfernen</button>
+    </div>
+  `).join('');
+  if (!st.employees.length) {
+    box.innerHTML = '<p class="pill">Noch keine Mitarbeiter hinterlegt.</p>';
+  }
+  const link = document.getElementById('settingsLinkLogin');
+  if (link) link.checked = st.linkEmployeesToLogin !== false;
+}
+
+function addEmployee() {
+  const st = getSettings();
+  st.employees.push('');
+  st.linkEmployeesToLogin = st.linkEmployeesToLogin !== false;
+  localStorage.setItem('baustellen_settings', JSON.stringify(st));
+  renderSettings();
+}
+
+function removeEmployee(index) {
+  const st = getSettings();
+  st.employees.splice(index, 1);
+  localStorage.setItem('baustellen_settings', JSON.stringify(st));
+  renderSettings();
+}
+
+function saveSettings() {
+  const st = getSettings();
+  st.employees = [...document.querySelectorAll('[data-settings-employee]')]
+    .map(input => input.value.trim())
+    .filter(Boolean);
+  st.linkEmployeesToLogin = document.getElementById('settingsLinkLogin')?.checked !== false;
+  localStorage.setItem('baustellen_settings', JSON.stringify(st));
+
+  if (st.linkEmployeesToLogin) {
+    renderLoginEmployees();
+  }
+  closeSettings();
+  alert('Einstellungen gespeichert.');
+}
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    const key = 'baustellen_settings';
+    const current = JSON.parse(localStorage.getItem(key) || '{}');
+    current.employees = Array.isArray(current.employees) ? current.employees : [];
+    if (!current.employees.includes('Ralf Möller')) {
+      current.employees.unshift('Ralf Möller');
+      localStorage.setItem(key, JSON.stringify(current));
+    }
+  } catch(e) {}
+});
+</script>
+
+
+<script>
+(function seedBaustellenTestdaten20() {
+  const TEST_FLAG = 'BAUSTELLEN_TESTDATEN_20_V1';
+  if (localStorage.getItem(TEST_FLAG) === '1') return;
+
+  const customers = [
+    'Müller Gartenbau', 'Schmidt Immobilien', 'Nordholz GmbH', 'Hansen Privat',
+    'Baum & Garten Petersen', 'Küstenpark GmbH', 'Meier Hausverwaltung',
+    'Waldhof GbR', 'Bauunternehmen Thomsen', 'Lindenhof', 'Franke Immobilien',
+    'Nordlicht Pflege GmbH', 'Klausen Privat', 'Ostsee Wohnbau',
+    'Gartenservice Jessen', 'Hausverwaltung Hansen', 'Holz & Grün GmbH',
+    'Moorblick GbR', 'Seeblick Immobilien', 'Baumdienst Nord'
+  ];
+
+  const descriptions = [
+    'Baumpflege und Kronenpflege',
+    'Baumkontrolle und Totholzentfernung',
+    'Fällarbeiten und Entsorgung',
+    'Kroneneinkürzung und Sicherung',
+    'Stubbenfräsen und Nacharbeiten'
+  ];
+
+  function isoDate(daysAgo) {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString().slice(0, 10);
+  }
+
+  for (let i = 1; i <= 20; i++) {
+    const nr = 'TEST-' + String(i).padStart(3, '0');
+    const people = i % 3 === 0
+      ? ['Ralf Möller', 'Mitarbeiter 2']
+      : ['Ralf Möller'];
+
+    const order = {
+      id: 'test-' + i,
+      auftragsnummer: nr,
+      kunde: customers[i - 1],
+      kundenname: customers[i - 1],
+      auftragsbeschreibung: descriptions[(i - 1) % descriptions.length],
+      mitarbeiter: people,
+      vorarbeiter: 'Ralf Möller',
+      erstellt_am: new Date().toISOString(),
+      status: i % 4 === 0 ? 'offen' : 'erfasst',
+      admin_geprueft: false,
+      ist: {
+        arbeitstage: [{
+          datum: isoDate(i),
+          ankunft: '07:30',
+          abfahrt: '16:00',
+          pause: 30
+        }],
+        taetigkeiten: {
+          Klettern: 120 + i * 5,
+          HAB: i % 2 ? 60 : 90,
+          Fräsen: i % 5 === 0 ? 45 : 0,
+          Schredder: 60,
+          Bagger: i % 4 === 0 ? 90 : 0,
+          Lader: 30,
+          Entsorgung: 45
+        },
+        entsorgung: [
+          { menge: String(2 + (i % 4)), einheit: 'm³', material: 'Grünschnitt' }
+        ],
+        material: i % 2 ? 'Seil, Anschlagmittel, Betriebsstoffe' : 'Betriebsstoffe und Kleinmaterial',
+        zusatzarbeiten: i % 3 === 0 ? 'Zusätzliche Reinigung der Baustelle' : '',
+        gefaehrdungsbeurteilung: true,
+        artenschutzrechtliche_pruefung: i % 5 === 0,
+        kundenabnahme: i % 4 !== 0,
+        signatur: ''
+      },
+      testdatensatz: true
+    };
+
+    localStorage.setItem('baustellen_' + nr, JSON.stringify(order));
+  }
+
+  localStorage.setItem(TEST_FLAG, '1');
+})();
+</script>
+
+
+<script>
+function getBaustellenOrders() {
+  return Array.isArray(supabaseOrders) ? supabaseOrders : [];
+}
+
+async function refreshSupabaseOrders(){
+  const {data,error}=await supabaseClient.from('auftraege').select('*').order('erstellt_am',{ascending:false});
+  if(error){
+    console.error(error);
+    return {data,error};
+  }
+  supabaseOrders=data||[];
+  await loadDashboardTotals();
+  renderDashboardKPIs();
+  return {data,error};
+}
+
+let dashboardTotalsByOrder = {};
+
+function minutesBetweenTimes(start,end){
+  if(!start || !end) return 0;
+  const [sh,sm]=String(start).slice(0,5).split(':').map(Number);
+  const [eh,em]=String(end).slice(0,5).split(':').map(Number);
+  if(!Number.isFinite(sh)||!Number.isFinite(sm)||!Number.isFinite(eh)||!Number.isFinite(em)) return 0;
+  let mins=(eh*60+em)-(sh*60+sm);
+  if(mins<0) mins+=24*60;
+  return Math.max(0,mins);
+}
+
+async function loadDashboardTotals(){
+  dashboardTotalsByOrder={};
+  if(!supabaseOrders.length) return;
+  const ids=supabaseOrders.map(o=>o.id).filter(Boolean);
+  const [daysRes,timesRes,activitiesRes,disposalRes]=await Promise.all([
+    supabaseClient.from('arbeitstage').select('id,auftrag_id').in('auftrag_id',ids),
+    supabaseClient.from('arbeitszeiten').select('arbeitstag_id,ankunft,abfahrt,pause_minuten').in('arbeitstag_id',[]) ,
+    supabaseClient.from('taetigkeiten').select('arbeitstag_id,hab_minuten,schredder_minuten').in('arbeitstag_id',[]),
+    supabaseClient.from('entsorgung').select('arbeitstag_id,menge,einheit').in('arbeitstag_id',[])
+  ]);
+  if(daysRes.error){ console.error('Arbeitstage Dashboard:',daysRes.error); return; }
+  const days=daysRes.data||[];
+  const dayIds=days.map(d=>d.id).filter(Boolean);
+  if(dayIds.length){
+    const [t,a,e]=await Promise.all([
+      supabaseClient.from('arbeitszeiten').select('arbeitstag_id,ankunft,abfahrt,pause_minuten').in('arbeitstag_id',dayIds),
+      supabaseClient.from('taetigkeiten').select('arbeitstag_id,hab_minuten,schredder_minuten').in('arbeitstag_id',dayIds),
+      supabaseClient.from('entsorgung').select('arbeitstag_id,menge,einheit').in('arbeitstag_id',dayIds)
+    ]);
+    if(t.error) console.error('Arbeitszeiten Dashboard:',t.error);
+    if(a.error) console.error('Tätigkeiten Dashboard:',a.error);
+    if(e.error) console.error('Entsorgung Dashboard:',e.error);
+    const dayToOrder={};
+    days.forEach(d=>dayToOrder[d.id]=d.auftrag_id);
+    const totals={};
+    ids.forEach(id=>totals[id]={mitarbeiterMin:0,habMin:0,schredderMin:0,disposalByUnit:{}});
+    (t.data||[]).forEach(r=>{
+      const oid=dayToOrder[r.arbeitstag_id]; if(!oid) return;
+      totals[oid].mitarbeiterMin += Math.max(0,minutesBetweenTimes(r.ankunft,r.abfahrt)-Number(r.pause_minuten||0));
+    });
+    (a.data||[]).forEach(r=>{
+      const oid=dayToOrder[r.arbeitstag_id]; if(!oid) return;
+      totals[oid].habMin += Number(r.hab_minuten||0);
+      totals[oid].schredderMin += Number(r.schredder_minuten||0);
+    });
+    (e.data||[]).forEach(r=>{
+      const oid=dayToOrder[r.arbeitstag_id]; if(!oid) return;
+      const unit=String(r.einheit||'').trim() || 'Einheit';
+      const qty=Number(r.menge||0);
+      if(!totals[oid].disposalByUnit[unit]) totals[oid].disposalByUnit[unit]=0;
+      if(Number.isFinite(qty)) totals[oid].disposalByUnit[unit]+=qty;
+    });
+    dashboardTotalsByOrder=totals;
+  }
+}
+
+function formatHours(minutes){
+  const m=Math.round(Number(minutes||0));
+  return (m/60).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' h';
+}
+
+function formatDisposalTotals(byUnit){
+  const entries=Object.entries(byUnit||{});
+  if(!entries.length) return '0';
+  return entries.map(([unit,qty])=>`${Number(qty).toLocaleString('de-DE',{maximumFractionDigits:2})} ${escapeHtml(unit)}`).join(' + ');
+}
+
+function isReviewed(o) {
+  return o.admin_geprueft === true || o.istdaten_freigegeben === true;
+}
+
+function isDataChecked(o) {
+  return o.admin_daten_geprueft === true || isReviewed(o);
+}
+
+let dashboardReviewFilter = 'open';
+
+function renderDashboardKPIs() {
+  const orders = getBaustellenOrders();
+  const open = orders.filter(o => !isReviewed(o)).length;
+  const checked = orders.filter(o => isReviewed(o)).length;
+
+  const root = document.getElementById('dashboardReviewArea');
+  if (!root) return;
+
+  root.innerHTML = `
+    <div class="dashboard-kpis">
+      <div class="dashboard-kpi">
+        <div class="number">${open}</div>
+        <div class="label">Datensätze prüfen</div>
+      </div>
+      <div class="dashboard-kpi">
+        <div class="number">${checked}</div>
+        <div class="label">Datensätze geprüft</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0;">
+      <button type="button"
+        class="dashboard-filter ${dashboardReviewFilter === 'open' ? 'active' : ''}"
+        onclick="setDashboardReviewFilter('open')">
+        Prüfen (${open})
+      </button>
+      <button type="button"
+        class="dashboard-filter ${dashboardReviewFilter === 'checked' ? 'active' : ''}"
+        onclick="setDashboardReviewFilter('checked')">
+        Geprüft (${checked})
+      </button>
+    </div>
+
+    <div class="review-list" id="reviewList"></div>
+  `;
+
+  renderReviewList();
+}
+
+function setDashboardReviewFilter(filter) {
+  dashboardReviewFilter = filter;
+  renderDashboardKPIs();
+}
+
+function renderReviewList() {
+  const list = document.getElementById('reviewList');
+  if (!list) return;
+
+  const orders = getBaustellenOrders();
+  const filtered = dashboardReviewFilter === 'checked'
+    ? orders.filter(o => isReviewed(o))
+    : orders.filter(o => !isReviewed(o));
+
+  const renderItem = (o) => {
+    const totals=dashboardTotalsByOrder[o.id] || {mitarbeiterMin:0,habMin:0,schredderMin:0,disposalByUnit:{}};
+    return `
+    <div class="review-item">
+      <div class="review-item-head">
+        <div>
+          <strong>${escapeHtml(o.auftragsnummer || '')}</strong><br>
+          ${escapeHtml(o.kunde || o.kundenname || '')}
+        </div>
+        <div class="review-status ${isReviewed(o) ? 'done' : 'open'}">
+          ${isReviewed(o) ? 'Geprüft' : 'Prüfung offen'}
+        </div>
+      </div>
+      <div style="margin-top:6px;">${escapeHtml(o.auftragsbeschreibung || '')}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:12px;">
+        <div class="notice"><strong>Mitarbeiter Stunden Gesamt</strong><br>${formatHours(totals.mitarbeiterMin)}</div>
+        <div class="notice"><strong>HAB Stunden Gesamt</strong><br>${formatHours(totals.habMin)}</div>
+        <div class="notice"><strong>Schredder Stunden Gesamt</strong><br>${formatHours(totals.schredderMin)}</div>
+        <div class="notice"><strong>Entsorgung Gesamt</strong><br>${formatDisposalTotals(totals.disposalByUnit)}</div>
+      </div>
+      <div class="review-actions">
+        <button type="button" onclick="openFullOrderEditor('${encodeURIComponent(o.auftragsnummer)}')">
+          ${isReviewed(o) ? 'Datensatz ansehen / bearbeiten' : 'Datensatz prüfen / bearbeiten'}
+        </button>
+        <span style="display:inline-flex;align-items:center;">
+          ${isDataChecked(o) ? '<span class="reviewed-badge">geprüft</span>' : ''}
+        </span>
+      </div>
+    </div>
+  `;
+  };
+
+  list.innerHTML = filtered.map(renderItem).join('') ||
+    `<div class="review-item">${
+      dashboardReviewFilter === 'checked'
+        ? 'Keine freigegebenen Ist-Daten vorhanden.'
+        : 'Keine offenen Datensätze vorhanden.'
+    }</div>`;
+}
+
+function escapeHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[c]));
+}
+
+async function openFullOrderEditor(encodedNr) {
+  const nr = decodeURIComponent(encodedNr);
+  let o = (Array.isArray(supabaseOrders) ? supabaseOrders.find(x => x.auftragsnummer === nr) : null);
+  if (!o) {
+    const {data,error}=await supabaseClient.from('auftraege').select('*').eq('auftragsnummer',nr).single();
+    if(error){ alert('Datensatz konnte nicht geladen werden: '+error.message); return; }
+    o=data;
+  }
+
+  let modal = document.getElementById('fullOrderEditModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'fullOrderEditModal';
+    modal.className = 'edit-modal';
+    document.body.appendChild(modal);
+  }
+
+  // Child data is loaded from Supabase so the administrator edits the real record.
+  let firstDay = {};
+  let taet = {};
+  let ents = [];
+  try {
+    const dayRes=await supabaseClient.from('arbeitstage').select('*').eq('auftrag_id',o.id).order('datum',{ascending:true}).limit(1);
+    if(dayRes.data?.[0]) {
+      firstDay=dayRes.data[0];
+      const tRes=await supabaseClient.from('taetigkeiten').select('*').eq('arbeitstag_id',firstDay.id).limit(1);
+      if(tRes.data?.[0]) taet=tRes.data[0];
+      const eRes=await supabaseClient.from('entsorgung').select('*').eq('arbeitstag_id',firstDay.id).order('created_at');
+      ents=eRes.data||[];
+    }
+  } catch(e) {}
+
+  modal.innerHTML = `
+    <div class="edit-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <div><h2 style="margin:0;">Datensatz prüfen und bearbeiten</h2><div style="color:#666;margin-top:4px;">${escapeHtml(o.auftragsnummer || '')}</div></div>
+        <button type="button" onclick="closeFullOrderEditor()">×</button>
+      </div>
+      <div class="review-section">
+        <div class="review-section-title"><h3>1. Auftrag</h3><span class="badge">Grunddaten</span></div>
+        <div class="review-fields">
+          <div class="review-field"><label>Auftragsnummer</label><input id="edit_nr" value="${escapeHtml(o.auftragsnummer)}" readonly></div>
+          <div class="review-field"><label>Kunde</label><input id="edit_kunde" value="${escapeHtml(o.kundenname || '')}"></div>
+          <div class="review-field full"><label>Auftragsbeschreibung</label><textarea id="edit_beschreibung" rows="3">${escapeHtml(o.auftragsbeschreibung || '')}</textarea></div>
+        </div>
+      </div>
+      <div class="review-section">
+        <div class="review-section-title"><h3>2. Arbeitszeit</h3><span class="badge">Baustelle</span></div>
+        <div class="review-fields">
+          <div class="review-field"><label>Arbeitstag</label><input id="edit_datum" type="date" value="${escapeHtml(firstDay.datum || '')}"></div>
+          <div class="review-field"><label>Ankunft</label><input id="edit_ankunft" type="time" value="${escapeHtml(firstDay.ankunft || '')}"></div>
+          <div class="review-field"><label>Abfahrt</label><input id="edit_abfahrt" type="time" value="${escapeHtml(firstDay.abfahrt || '')}"></div>
+          <div class="review-field"><label>Pause (Minuten)</label><input id="edit_pause" type="number" min="0" value="${Number(firstDay.pause_minuten || 0)}"></div>
+        </div>
+      </div>
+      <div class="review-section">
+        <div class="review-section-title"><h3>3. Tätigkeiten</h3><span class="badge">Minuten</span></div>
+        <div class="review-activity-grid">
+          <div class="review-activity"><label>Klettern</label><input id="edit_klettern" type="number" min="0" value="${Number(taet.klettern_minuten || 0)}"></div>
+          <div class="review-activity"><label>HAB</label><input id="edit_hab" type="number" min="0" value="${Number(taet.hab_minuten || 0)}"></div>
+          <div class="review-activity"><label>Fräsen</label><input id="edit_fraesen" type="number" min="0" value="${Number(taet.fraesen_minuten || 0)}"></div>
+          <div class="review-activity"><label>Schredder</label><input id="edit_schredder" type="number" min="0" value="${Number(taet.schredder_minuten || 0)}"></div>
+          <div class="review-activity"><label>Bagger</label><input id="edit_bagger" type="number" min="0" value="${Number(taet.bagger_minuten || 0)}"></div>
+          <div class="review-activity"><label>Lader</label><input id="edit_lader" type="number" min="0" value="${Number(taet.lader_minuten || 0)}"></div>
+          <div class="review-activity"><label>Entsorgung Tätigkeit</label><input id="edit_entsorgungzeit" type="number" min="0" value="${Number(taet.entsorgung_minuten || 0)}"></div>
+        </div>
+      </div>
+      <div class="review-section"><div class="review-section-title"><h3>4. Entsorgung</h3></div><div id="edit_disposal_rows"></div><button type="button" onclick="addReviewDisposalRow()">+ Weitere Entsorgung</button></div>
+      <div class="edit-actions review-actions-sticky">
+        <button type="button" onclick="closeFullOrderEditor()">Abbrechen</button>
+        <button type="button" onclick="saveFullOrderEdit('${encodeURIComponent(o.auftragsnummer)}','${o.id}')">Änderungen in Supabase speichern</button>
+      </div>
+    </div>`;
+
+  const rows=document.getElementById('edit_disposal_rows');
+  rows.innerHTML=ents.map((e,idx)=>`<div class="review-disposal-row"><input data-didx="${idx}" data-field="menge" value="${escapeHtml(e.menge ?? '')}" placeholder="Menge"><input data-didx="${idx}" data-field="einheit" value="${escapeHtml(e.einheit || 'm³')}" placeholder="Einheit"><input data-didx="${idx}" data-field="material" value="${escapeHtml(e.material || '')}" placeholder="Material"></div>`).join('');
+  if(!ents.length) addReviewDisposalRow();
+  modal.dataset.auftragId=o.id;
+  modal.dataset.arbeitstagId=firstDay.id||'';
+  modal.dataset.taetigkeitId=taet.id||'';
+  modal.classList.add('open');
+}
+
+function addReviewDisposalRow() {
+  const rows=document.getElementById('edit_disposal_rows'); if(!rows)return;
+  const idx=rows.querySelectorAll('.review-disposal-row').length;
+  const div=document.createElement('div'); div.className='review-disposal-row';
+  div.innerHTML=`<input data-didx="${idx}" data-field="menge" placeholder="Menge"><input data-didx="${idx}" data-field="einheit" value="m³" placeholder="Einheit"><input data-didx="${idx}" data-field="material" placeholder="Material">`;
+  rows.appendChild(div);
+}
+
+function closeFullOrderEditor(){ const modal=document.getElementById('fullOrderEditModal'); if(modal) modal.classList.remove('open'); }
+
+async function saveFullOrderEdit(encodedNr, orderId) {
+  const nr=decodeURIComponent(encodedNr);
+  const modal=document.getElementById('fullOrderEditModal');
+  try {
+    const payload={
+      kundenname:document.getElementById('edit_kunde').value.trim(),
+      auftragsbeschreibung:document.getElementById('edit_beschreibung').value.trim(),
+      admin_geprueft:true,
+      updated_at:new Date().toISOString()
+    };
+    if(!payload.kundenname || !payload.auftragsbeschreibung){alert('Kunde und Auftragsbeschreibung dürfen nicht leer sein.');return;}
+    const r=await supabaseClient.from('auftraege').update(payload).eq('id',orderId).select().single();
+    if(r.error) throw r.error;
+
+    const dayId=modal.dataset.arbeitstagId;
+    if(dayId){
+      const dr=await supabaseClient.from('arbeitstage').update({datum:document.getElementById('edit_datum').value}).eq('id',dayId);
+      if(dr.error) throw dr.error;
+      const wr=await supabaseClient.from('arbeitszeiten').update({ankunft:document.getElementById('edit_ankunft').value||null,abfahrt:document.getElementById('edit_abfahrt').value||null,pause_minuten:Number(document.getElementById('edit_pause').value||0)}).eq('arbeitstag_id',dayId);
+      if(wr.error && !/0 rows/i.test(wr.error.message||'')) throw wr.error;
+      const tid=modal.dataset.taetigkeitId;
+      const tp={klettern_minuten:Number(document.getElementById('edit_klettern').value||0),hab_minuten:Number(document.getElementById('edit_hab').value||0),fraesen_minuten:Number(document.getElementById('edit_fraesen').value||0),schredder_minuten:Number(document.getElementById('edit_schredder').value||0),bagger_minuten:Number(document.getElementById('edit_bagger').value||0),lader_minuten:Number(document.getElementById('edit_lader').value||0),entsorgung_minuten:Number(document.getElementById('edit_entsorgungzeit').value||0)};
+      if(tid){const tr=await supabaseClient.from('taetigkeiten').update(tp).eq('id',tid);if(tr.error)throw tr.error;}
+    }
+    alert('Änderungen wurden in Supabase gespeichert und der Datensatz als geprüft markiert.');
+    closeFullOrderEditor();
+    await refreshSupabaseOrders();
+    renderDashboardKPIs();
+  } catch(e){ alert('Änderungen konnten nicht gespeichert werden: '+(e.message||e)); }
+}
+
+async function approveOrder(encodedNr) {
+  const nr=decodeURIComponent(encodedNr);
+  const {data,error}=await supabaseClient.from('auftraege').update({admin_geprueft:true,istdaten_freigegeben:true,geprueft_am:new Date().toISOString(),status:'Istdaten freigegeben',updated_at:new Date().toISOString()}).eq('auftragsnummer',nr).select().single();
+  if(error){alert('Freigabe fehlgeschlagen: '+error.message);return;}
+  const idx=supabaseOrders.findIndex(o=>o.auftragsnummer===nr);if(idx>=0)supabaseOrders[idx]=data;
+  renderDashboardKPIs();
+}
+
+// Try to refresh the dashboard whenever it exists.
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(renderDashboardKPIs, 50);
+});
+</script>
+
+</body>
+</html>
