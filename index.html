@@ -282,12 +282,14 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 <style id="baum-service-nord-header-style">
 .app-header{background:#fff;border-bottom:1px solid var(--line);padding:8px 14px;position:sticky;top:0;z-index:100;display:flex;align-items:center;min-height:58px}
 .app-header a{display:block;line-height:0}
+.app-brand{display:flex;align-items:center;gap:18px}
+.app-title{font-size:22px;font-weight:700;color:#17202a;white-space:nowrap}
 .app-logo{display:block;width:190px;height:auto;max-height:62px;object-fit:contain;object-position:left center}
-@media(max-width:600px){.app-header{padding:6px 10px;min-height:50px}.app-logo{width:165px;max-height:54px}}
+@media(max-width:600px){.app-header{padding:6px 10px;min-height:50px}.app-brand{gap:10px}.app-logo{width:165px;max-height:54px}.app-title{font-size:18px}}
 </style>
 </head>
 <body>
-<header class="app-header"><a href="#" aria-label="Baum Service Nord"><img class="app-logo" src="https://baum-service-nord.de/wp-content/uploads/2021/09/baumservicenord_logoweb.png" alt="Baum Service Nord – Die Baumexperten"></a></header>
+<header class="app-header"><div class="app-brand"><a href="#" aria-label="Baum Service Nord"><img class="app-logo" src="https://baum-service-nord.de/wp-content/uploads/2021/09/baumservicenord_logoweb.png" alt="Baum Service Nord – Die Baumexperten"></a><div class="app-title">Baustellenzettel</div></div></header>
 <main>
 <section id="login" class="card">
 <h2>Anmeldung</h2>
